@@ -40,6 +40,11 @@ You can also check out the various tags in this repository for different variant
    kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s
    ```
    Once it is ready, you can check the running pods.
+   ```
+   kubectl get pods
+   ```
+   Notice the different components being deployed.
+
    You can also check the status of the `Kafka` custom resource where the operator stores useful information such as the bootstrap addresses of the Kafka cluster:
    ```
    kubectl get kafka my-cluster -o yaml
@@ -47,4 +52,32 @@ You can also check out the various tags in this repository for different variant
 
 ## Using the Kafka cluster
 
+5. Deploy a Kafka producer and consumer to send and receive some messages.
+   You can do that using the [`02-clients.yaml` file](./02-clients.yaml).
+   ```
+   kubectl apply -f 02-clients.yaml
+   ```
+   Notice the different YAML documents in the file:
+     * The two Kafka users - one for the producer and one for the consumer
+     * The Kafka topic they are using to send/receive the messages
+     * The actual Deployments with the producer and consumer applications and how they mount the secrets to connect to the broker
+
+6. Once the clients are deployed, you should see two pods.
+   You can check the logs to confirm they work:
+   ```
+   kubectl logs deployment/kafka-consumer -f
+   ```
+   You should see the _Hello World_ messages being received by the consumer
+
+7. Create another user using the [`03-my-user.yaml` file](./03-my-user.yaml).
+   You can create this user:
+   ```
+   kubectl apply -f 03-my-user.yaml
+   ```
+
+8. Once the user is created, you can:
+     * Take the TLS certificate from the user secret
+     * Take the external bootstrap address and the CA certificate from the status of the `Kafka` CR
+   And use them to connect to the Kafka cluster from outside the Kubernetes cluster.
+   You can use the Java application from [`04-external-client` directory] and run it against the cluster.
 
