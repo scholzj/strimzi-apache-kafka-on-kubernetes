@@ -37,7 +37,7 @@ public class MessageConsumerSSL {
         props.put(ConsumerConfig.CONFIG_PROVIDERS_CONFIG + ".secrets.class", "io.strimzi.kafka.KubernetesSecretConfigProvider");
 
         // Configure the boostrap server
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "my-cluster-kafka-bootstrap-myproject.apps.ci-ln-5c6m7sk-76ef8.aws-2.ci.openshift.org:443");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "<bootstrap-address>:<port>");
 
         // Configure TLS and authentication
         props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");

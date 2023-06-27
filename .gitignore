@@ -124,3 +124,6 @@ local.properties
 .worksheet
 
 .vscode/*
+
+# Video recordings
+videos/
