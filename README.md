@@ -3,6 +3,10 @@
 This repository contains an introductory demo of Strimzi and Apache Kafka on Kubernetes.
 I use it in introductory talks and workshops about Strimzi.
 
+## Slides
+
+The slides accompanying this demo can be found [here](https://docs.google.com/presentation/d/1Q00MGqS2WpYLiC5iPQG2fCd1OqbFdArnU4grOd1hG9U/edit?usp=sharing).
+
 ## Running the demo
 
 This demo was last used with Strimzi 0.35.1 on OpenShift 4.13.
@@ -23,6 +27,8 @@ You can also check out the various tags in this repository for different variant
    ```
 
 ## Deploying Kafka cluster
+
+_Shows how to deploy Apache Kafka cluster._
 
 2. Check out the [`basic-kafka.yaml` file](./basic-kafka.yaml).
    It shows the _simplest possible Kafka installation_.
@@ -52,6 +58,8 @@ You can also check out the various tags in this repository for different variant
 
 ## Using the Kafka cluster
 
+_Shows how to use the `KafkaTopic` and `KafkaUser` resources when deploying Kafka clients._
+
 5. Deploy a Kafka producer and consumer to send and receive some messages.
    You can do that using the [`02-clients.yaml` file](./02-clients.yaml).
    ```
@@ -69,67 +77,91 @@ You can also check out the various tags in this repository for different variant
    ```
    You should see the _Hello World_ messages being received by the consumer
 
-7. Create another user using the [`03-my-user.yaml` file](./03-my-user.yaml).
-   You can create this user:
-   ```
-   kubectl apply -f 03-my-user.yaml
-   ```
-
-8. Once the user is created, you can:
-     * Take the TLS certificate from the user secret
-     * Take the external bootstrap address and the CA certificate from the status of the `Kafka` CR
-   And use them to connect to the Kafka cluster from outside the Kubernetes cluster.
-   You can use the Java application from [`04-external-client` directory](./04-external-client/) and run it against the cluster.
-
 ## Kafka Connect
 
-9. Deploy Kafka Connect using the [`05-connect.yaml` file](./05-connect.yaml):
+_Demonstrates how to deploy Kafka Connect, add a connector plugin to it, and create a connector instance._
+
+7. Deploy Kafka Connect using the [`03-connect.yaml` file](./03-connect.yaml):
    ```
-   kubetl apply -f 05-connect.yaml
+   kubetl apply -f 03-connect.yaml
    ```
    Check the YAML and notice how:
      * It creates the user and ACLs for Connect
      * Adds the Connector to the newly built container image
 
-10. Create a connector instance using the [`06-connector.yaml` file](./06-connector.yaml):
-    ```
-    kubectl apply -f 06-connector.yaml
-    ```
+8. Create a connector instance using the [`04-connector.yaml` file](./04-connector.yaml):
+   ```
+   kubectl apply -f 04-connector.yaml
+   ```
     
-11. Once the connector is created, check the Connect logs to see how it logs the messages:
+9. Once the connector is created, check the Connect logs to see how it logs the messages:
+   ```
+   kubectl logs deployment/my-connect-connect -f
+   ```
+
+## External access
+
+_Shows how the operator helps with external access to the Kafka cluster using OpenShift Routes._
+
+10. Create another user using the [`05-my-user.yaml` file](./05-my-user.yaml).
+    You can create this user:
     ```
-    kubectl logs deployment/my-connect-connect -f
+    kubectl apply -f 05-my-user.yaml
     ```
+
+11. Once the user is created, you can:
+      * Take the TLS certificate from the user secret
+      * Take the external bootstrap address and the CA certificate from the status of the `Kafka` CR
+    And use them to connect to the Kafka cluster from outside the Kubernetes cluster.
+    You can use the Java application from [`06-external-client/` directory](./06-external-client/) and run it against the cluster.
+
+## Broker reconfiguration
+
+_Shows the power of the operator when changing the broker configuration._
+
+12. Edit the Kafka cluster to change its configuration.
+    You can edit the Kafka cluster with `kubectl`:
+    ```
+    kubectl edit kafka my-cluster
+    ```
+    And change the configuration in `.spec.kafka.config`.
+    Set the option `compression.type` to `zstd`.
+    Check how the operator changes the configuration dynamically.
+
+13. Try another change that will require a rolling update and set the `delete.topic.enable` option to `false`.
+    This change requires a rolling update which the operator will automatically do.
+    Notice the order in which the brokers are rolled => the controller broker should be always rolled last and the operator makes sure the partition-replicas are in-sync.
 
 ## Cruise Control rebalancing
 
-12. Use Cruise Control to rebalance the Kafka cluster.
+_Demonstrates how to rebalance a Kafka cluster using built-in Cruise Control support._
+
+14. Use Cruise Control to rebalance the Kafka cluster.
     You can use the [`07-rebalance.yaml` file](./07-rebalance.yaml) for it.
     Trigger the rebalance using:
     ```
     kubectl apply -f 07-rebalance.yaml
     ```
 
-13. Watch the rebalance progress:
+15. Watch the rebalance progress:
     ```
     kubectl get kafkarebalance -w
     ```
 
 ## Clean-up
 
-14. Delete all Strimzi resources:
+16. Delete all Strimzi resources:
     ```
     kubectl delete $(kubectl get strimzi -o name)
     ```
 
-16. Delete the consumer and producer:
+17. Delete the consumer and producer:
     ```
     kubectl delete -f 02-clients.yaml
     ```
 
-15. Uninstall the Strimzi Operator.
+18. Uninstall the Strimzi Operator.
     You can do that using the Operator Hub or using the YAML files - depending on how you installed it at the beginning.
     ```
     kubectl delete -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.35.1/strimzi-cluster-operator-0.35.1.yaml
     ```
-
