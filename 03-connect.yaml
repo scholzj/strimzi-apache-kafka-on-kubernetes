@@ -108,8 +108,8 @@ spec:
       - name: echo-sink-connector
         artifacts:
           - type: jar
-            url: https://github.com/scholzj/echo-sink/releases/download/1.4.0/echo-sink-1.4.0.jar
-            sha512sum: 6d40b6334b9e6ff81a11176f23d082688ace58ff000570867dfabbd69a301c579c21f571985612c36cddd9d03454cea8cf0ace0d1f9335b5ef2e039f9781074a
+            url: https://github.com/scholzj/echo-sink/releases/download/1.5.0/echo-sink-1.5.0.jar
+            sha512sum: 87b6512e1c75efdb369a2d7107f40a39e91604eced90cdb8ed064f03c15c2d2a967c36dc7a4698e9910dfac6dd10fb25326b69c581ee0b168b8f786617b6e402
 
 ---
 kind: ConfigMap
