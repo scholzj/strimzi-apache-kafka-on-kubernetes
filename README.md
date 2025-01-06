@@ -9,7 +9,7 @@ The slides accompanying this demo can be found [here](https://docs.google.com/pr
 
 ## Running the demo
 
-This demo was last used with Strimzi 0.37.0 on OpenShift 4.13.
+This demo was last used with Strimzi 0.45.0 on Kubernetes 1.32.
 It might not work with other OpenShift versions, other Kubernetes distributions or a different Strimzi version.
 It should be executed from a namespace named `myproject`.
 It expects the namespace to be set as the default namespace.
@@ -20,10 +20,10 @@ You can also check out the various tags in this repository for different variant
 
 ## Prerequisites
 
-1. Deploy Strimzi 0.37.0 in your cluster.
+1. Deploy Strimzi 0.45.0 in your cluster.
    You can install it from the Operator Hub or using the YAML files:
    ```
-   kubectl apply -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.37.0/strimzi-cluster-operator-0.37.0.yaml
+   kubectl apply -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.45.0/strimzi-cluster-operator-0.45.0.yaml
    ```
 
 ## Deploying Kafka cluster
@@ -148,20 +148,34 @@ _Demonstrates how to rebalance a Kafka cluster using built-in Cruise Control sup
     kubectl get kafkarebalance -w
     ```
 
+## Rebalancing at scale-up
+
+_Demonstrates how Strimzi automatically rebalances the cluster when the Kafka cluster is scaled-up or down._
+
+16. Scale the Kafka cluster from 3 to 4 broker nodes:
+    ```
+    kubectl scale kafkanodepool brokers --replicas=4
+    ```
+
+17. Wait for the new broker to get ready, the auto-rebalance to be started, and watch the rebalance progress:
+    ```
+    kubectl get kafkarebalance -w
+    ```
+
 ## Clean-up
 
-16. Delete all Strimzi resources:
+18. Delete all Strimzi resources:
     ```
-    kubectl delete $(kubectl get strimzi -o name)
+    kubectl delete $(kubectl get kt -o name) && kubectl delete $(kubectl get strimzi -o name)
     ```
 
-17. Delete the consumer and producer:
+19. Delete the consumer and producer:
     ```
     kubectl delete -f 02-clients.yaml
     ```
 
-18. Uninstall the Strimzi Operator.
+20. Uninstall the Strimzi Operator.
     You can do that using the Operator Hub or using the YAML files - depending on how you installed it at the beginning.
     ```
-    kubectl delete -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.37.0/strimzi-cluster-operator-0.37.0.yaml
+    kubectl delete -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.45.0/strimzi-cluster-operator-0.45.0.yaml
     ```

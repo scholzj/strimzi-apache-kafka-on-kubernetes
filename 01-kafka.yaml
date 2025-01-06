@@ -4,16 +4,11 @@ metadata:
   name: my-cluster
   labels:
     app: my-cluster
+  annotations:
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
 spec:
   kafka:
-    replicas: 3
-    resources:
-      requests:
-        memory: 2Gi
-        cpu: 500m
-      limits:
-        memory: 2Gi
-        cpu: "1"
     listeners:
       - name: plain
         port: 9092
@@ -29,7 +24,7 @@ spec:
           type: tls
       - name: external
         port: 9094
-        type: route
+        type: nodeport
         tls: true
         authentication:
           type: tls
@@ -42,44 +37,12 @@ spec:
       transaction.state.log.min.isr: 2
       default.replication.factor: 3
       min.insync.replicas: 2
-    storage:
-      type: jbod
-      volumes:
-        - id: 0
-          type: persistent-claim
-          size: 100Gi
-          deleteClaim: true
-    template:
-      podDisruptionBudget:
-        maxUnavailable: 0
     metricsConfig:
       type: jmxPrometheusExporter
       valueFrom:
         configMapKeyRef:
           name: kafka-metrics
           key: kafka-metrics.yaml
-  zookeeper:
-    replicas: 3
-    resources:
-      requests:
-        memory: 1Gi
-        cpu: "0.3"
-      limits:
-        memory: 1Gi
-        cpu: "0.5"
-    storage:
-      type: persistent-claim
-      size: 100Gi
-      deleteClaim: true
-    template:
-      podDisruptionBudget:
-        maxUnavailable: 0
-    metricsConfig:
-      type: jmxPrometheusExporter
-      valueFrom:
-        configMapKeyRef:
-          name: kafka-metrics
-          key: zoo-metrics.yaml
   entityOperator:
     topicOperator:
       resources:
@@ -106,12 +69,75 @@ spec:
         memory: 256Mi
         cpu: "0.5"
   cruiseControl:
+    autoRebalance:
+      - mode: add-brokers
+        # template:
+        #   name: my-add-remove-brokers-rebalancing-template
+      - mode: remove-brokers
+        # template:
+        #   name: my-add-remove-brokers-rebalancing-template
     metricsConfig:
       type: jmxPrometheusExporter
       valueFrom:
         configMapKeyRef:
           name: kafka-metrics
           key: cruise-control-metrics.yaml
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: controllers
+  labels:
+    strimzi.io/cluster: my-cluster
+  annotations:
+    strimzi.io/next-node-ids: "[0-99]"
+    strimzi.io/remove-node-ids: "[99-0]"
+spec:
+  roles:
+    - controller
+  replicas: 3
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: "1"
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 100Gi
+        deleteClaim: true
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: brokers
+  labels:
+    strimzi.io/cluster: my-cluster
+  annotations:
+    strimzi.io/next-node-ids: "[100-199]"
+    strimzi.io/remove-node-ids: "[199-100]"
+spec:
+  roles:
+    - broker
+  replicas: 3
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: "1"
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 100Gi
+        deleteClaim: true
 
 ---
 kind: ConfigMap
@@ -155,9 +181,21 @@ data:
           clientSoftwareVersion: "$3"
           listener: "$4"
           networkProcessor: "$5"
+      - pattern: "kafka.server<type=(.+), listener=(.+), networkProcessor=(.+)><>(.+-total):"
+        name: kafka_server_$1_$4
+        type: COUNTER
+        labels:
+          listener: "$2"
+          networkProcessor: "$3"
       - pattern: "kafka.server<type=(.+), listener=(.+), networkProcessor=(.+)><>(.+):"
         name: kafka_server_$1_$4
         type: GAUGE
+        labels:
+          listener: "$2"
+          networkProcessor: "$3"
+      - pattern: kafka.server<type=(.+), listener=(.+), networkProcessor=(.+)><>(.+-total)
+        name: kafka_server_$1_$4
+        type: COUNTER
         labels:
           listener: "$2"
           networkProcessor: "$3"
@@ -245,62 +283,37 @@ data:
         type: GAUGE
         labels:
           quantile: "0.$4"
-    # KRaft mode: uncomment the following lines to export KRaft related metrics
-    # KRaft overall related metrics
-    # distinguish between always increasing COUNTER (total and max) and variable GAUGE (all others) metrics
-    #- pattern: "kafka.server<type=raft-metrics><>(.+-total|.+-max):"
-    #  name: kafka_server_raftmetrics_$1
-    #  type: COUNTER
-    #- pattern: "kafka.server<type=raft-metrics><>(.+):"
-    #  name: kafka_server_raftmetrics_$1
-    #  type: GAUGE
-    # KRaft "low level" channels related metrics
-    # distinguish between always increasing COUNTER (total and max) and variable GAUGE (all others) metrics
-    #- pattern: "kafka.server<type=raft-channel-metrics><>(.+-total|.+-max):"
-    #  name: kafka_server_raftchannelmetrics_$1
-    #  type: COUNTER
-    #- pattern: "kafka.server<type=raft-channel-metrics><>(.+):"
-    #  name: kafka_server_raftchannelmetrics_$1
-    #  type: GAUGE
-    # Broker metrics related to fetching metadata topic records in KRaft mode
-    #- pattern: "kafka.server<type=broker-metadata-metrics><>(.+):"
-    #  name: kafka_server_brokermetadatametrics_$1
-    #  type: GAUGE
-  zoo-metrics.yaml: |
-    # See https://github.com/prometheus/jmx_exporter for more info about JMX Prometheus Exporter metrics
-    lowercaseOutputName: true
-    rules:
-      # replicated Zookeeper
-      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+)><>(\\w+)"
-        name: "zookeeper_$2"
-        type: GAUGE
-      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+)><>(\\w+)"
-        name: "zookeeper_$3"
-        type: GAUGE
-        labels:
-          replicaId: "$2"
-      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+), name2=(\\w+)><>(Packets\\w+)"
-        name: "zookeeper_$4"
+      # KRaft mode: uncomment the following lines to export KRaft related metrics
+      # KRaft overall related metrics
+      # distinguish between always increasing COUNTER (total and max) and variable GAUGE (all others) metrics
+      - pattern: "kafka.server<type=raft-metrics><>(.+-total|.+-max):"
+        name: kafka_server_raftmetrics_$1
         type: COUNTER
+      - pattern: "kafka.server<type=raft-metrics><>(current-state): (.+)"
+        name: kafka_server_raftmetrics_$1
+        value: 1
+        type: UNTYPED
         labels:
-          replicaId: "$2"
-          memberType: "$3"
-      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+), name2=(\\w+)><>(\\w+)"
-        name: "zookeeper_$4"
+          $1: "$2"
+      - pattern: "kafka.server<type=raft-metrics><>(.+):"
+        name: kafka_server_raftmetrics_$1
         type: GAUGE
-        labels:
-          replicaId: "$2"
-          memberType: "$3"
-      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+), name2=(\\w+), name3=(\\w+)><>(\\w+)"
-        name: "zookeeper_$4_$5"
+      # KRaft "low level" channels related metrics
+      # distinguish between always increasing COUNTER (total and max) and variable GAUGE (all others) metrics
+      - pattern: "kafka.server<type=raft-channel-metrics><>(.+-total|.+-max):"
+        name: kafka_server_raftchannelmetrics_$1
+        type: COUNTER
+      - pattern: "kafka.server<type=raft-channel-metrics><>(.+):"
+        name: kafka_server_raftchannelmetrics_$1
         type: GAUGE
-        labels:
-          replicaId: "$2"
-          memberType: "$3"
+      # Broker metrics related to fetching metadata topic records in KRaft mode
+      - pattern: "kafka.server<type=broker-metadata-metrics><>(.+):"
+        name: kafka_server_brokermetadatametrics_$1
+        type: GAUGE
   cruise-control-metrics.yaml: |
     # See https://github.com/prometheus/jmx_exporter for more info about JMX Prometheus Exporter metrics
     lowercaseOutputName: true
     rules:
-    - pattern: kafka.cruisecontrol<name=(.+)><>(\w+)
-      name: kafka_cruisecontrol_$1_$2
-      type: GAUGE
+      - pattern: kafka.cruisecontrol<name=(.+)><>(\w+)
+        name: kafka_cruisecontrol_$1_$2
+        type: GAUGE

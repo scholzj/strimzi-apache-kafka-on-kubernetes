@@ -12,7 +12,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>3.5.1</version>
+            <version>3.9.0</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -22,17 +22,7 @@
         <dependency>
             <groupId>io.strimzi</groupId>
             <artifactId>kafka-kubernetes-config-provider</artifactId>
-            <version>1.1.1</version>
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>com.fasterxml.jackson.core</groupId>-->
-<!--                    <artifactId>jackson-annotations</artifactId>-->
-<!--                </exclusion>-->
-<!--                <exclusion>-->
-<!--                    <groupId>com.fasterxml.jackson.core</groupId>-->
-<!--                    <artifactId>jackson-databind</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
+            <version>1.2.0</version>
         </dependency>
     </dependencies>
 

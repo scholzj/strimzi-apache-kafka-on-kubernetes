@@ -103,13 +103,13 @@ spec:
         cpu: 1000m
     output:
       type: docker
-      image: image-registry.openshift-image-registry.svc:5000/myproject/kafka-connect-build:latest
+      image: ttl.sh/strimzi-apache-kafka-on-kubernetes-connect:24h
     plugins:
       - name: echo-sink-connector
         artifacts:
           - type: jar
-            url: https://github.com/scholzj/echo-sink/releases/download/1.5.0/echo-sink-1.5.0.jar
-            sha512sum: 87b6512e1c75efdb369a2d7107f40a39e91604eced90cdb8ed064f03c15c2d2a967c36dc7a4698e9910dfac6dd10fb25326b69c581ee0b168b8f786617b6e402
+            url: https://github.com/scholzj/echo-sink/releases/download/1.6.0/echo-sink-1.6.0.jar
+            sha512sum: 3f30d48079578f9f2d0a097ed9a7088773b135dff3dc8e70d87f8422c073adc1181cb41d823c1d1472b0447a337e4877e535daa34ca8ef21d608f8ee6f5e4a9c
 
 ---
 kind: ConfigMap
