@@ -5,7 +5,11 @@ I use it in introductory talks and workshops about Strimzi.
 
 ## Slides
 
-The slides accompanying this demo can be found [here](https://docs.google.com/presentation/d/1Q00MGqS2WpYLiC5iPQG2fCd1OqbFdArnU4grOd1hG9U/edit?usp=sharing).
+The slides accompanying this demo can be found [here](https://docs.google.com/presentation/d/1pPyEThNxJKH63jjsTo0CfrVTzmih3MC7BzbZLI_1xtM/edit?usp=sharing).
+
+## Video recording
+
+[![Strimzi: Apache Kafka on Kubernetes (Introduction demo)](http://img.youtube.com/vi/MY_bFb--HEg/0.jpg)](http://www.youtube.com/watch?v=MY_bFb--HEg "Strimzi: Apache Kafka on Kubernetes (Introduction demo)")
 
 ## Running the demo
 
