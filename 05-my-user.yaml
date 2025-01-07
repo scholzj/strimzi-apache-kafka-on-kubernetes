@@ -3,7 +3,6 @@ kind: KafkaUser
 metadata:
   name: my-user
   labels:
-    jakub: scholz
     strimzi.io/cluster: my-cluster
 spec:
   authentication:
