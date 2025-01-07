@@ -1,4 +1,20 @@
 apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: my-cluster
+  annotations:
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
+spec:
+  kafka:
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+---
+
+apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaNodePool
 metadata:
   name: dual-role
@@ -17,19 +33,3 @@ spec:
         size: 100Gi
         deleteClaim: false
         kraftMetadata: shared
----
-
-apiVersion: kafka.strimzi.io/v1beta2
-kind: Kafka
-metadata:
-  name: my-cluster
-  annotations:
-    strimzi.io/node-pools: enabled
-    strimzi.io/kraft: enabled
-spec:
-  kafka:
-    listeners:
-      - name: plain
-        port: 9092
-        type: internal
-        tls: false
